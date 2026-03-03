@@ -56,7 +56,7 @@ The pipeline follows a modern cloud data architecture:
 - Scheduling: Configured a Fabric Pipeline to trigger the entire end-to-end workflow daily.
 - Workspace Migration: Demonstrated environment lifecycle management by migrating pipelines and artifacts between different Fabric Workspaces.
 
-**Step 4:** Visualization
+**Step 5:** Visualization
 - Developed a Power BI report utilizing the Lakehouse's SQL endpoint.
 - Key Metrics: Account growth, customer distribution, and status change trends.
 
