@@ -1,0 +1,64 @@
+CREATE TABLE [bhimwarehouse].[dbo].[customerscdtype1]
+(
+   CustomerID VARCHAR(50),
+   FirstName VARCHAR(50),
+   LastName VARCHAR(50),
+   Email VARCHAR(50),
+   City VARCHAR(50),
+   JoinDate DATE,
+   UpdatedDate Date,
+   UpdatedBy VARCHAR(50),
+   CreatedDate Date,
+   CreatedBy VARCHAR(50),
+   Hashvalue BIGINT,
+   IsActive INT
+)
+GO
+
+CREATE PROCEDURE [dbo].[LoadSCDType1customer2]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Using MERGE to synchronize Lakehouse to Warehouse
+    MERGE INTO [bhimwarehouse].[dbo].[customerscdtype1] AS Target
+    USING (
+        SELECT 
+            CustomerID, FirstName, LastName, Email, City, JoinDate,
+            -- Calculate hash for incoming row to match target structure
+            HASHBYTES('SHA2_256', CONCAT(FirstName, LastName, Email, City, JoinDate)) AS CalculatedHash
+        FROM [bhimlakehouse].[dbo].[customer]
+    ) AS Source
+    ON Target.CustomerID = Source.CustomerID AND Target.IsActive = 1
+
+    -- 1. UPDATE: If record exists and hash differs (data changed)
+    WHEN MATCHED AND (Target.Hashvalue <> Source.CalculatedHash) THEN
+        UPDATE SET 
+            Target.Hashvalue = Source.CalculatedHash,
+            Target.UpdatedDate = GETDATE(),
+            Target.UpdatedBy = SYSTEM_USER,
+	    Target.IsActive = 0
+
+    -- 2. INSERT: If record is brand new
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (
+            CustomerID, FirstName, LastName, Email, City, JoinDate, 
+            Hashvalue, CreatedDate, CreatedBy, UpdatedDate, UpdatedBy, IsActive
+        )
+        VALUES (
+            Source.CustomerID, Source.FirstName, Source.LastName, Source.Email, 
+            Source.City, Source.JoinDate, Source.CalculatedHash, 
+            GETDATE(), SYSTEM_USER, GETDATE(), SYSTEM_USER,1
+        );
+END
+GO
+
+
+
+Execute [dbo].[LoadSCDType1customer2]
+
+
+
+
+
+
